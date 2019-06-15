@@ -1,0 +1,13 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "lbUZkJNO/4zOlILy6o+j1WAaZ+4=",
+			"path": "github.com/sabhiram/go-rpio",
+			"revision": "a36b96d0b1a40b37017d64875275e7e6312408c7",
+			"revisionTime": "2019-02-14T21:39:46Z"
+		}
+	],
+	"rootPath": "github.com/sabhiram/http-servo"
+}
