@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/nlopes/slack"
-	rpio "github.com/sabhiram/go-rpio"
+	"github.com/sabhiram/go-rpio"
 )
 
 const (
