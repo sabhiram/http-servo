@@ -112,7 +112,6 @@ func main() {
 
 Loop:
 	for {
-		fmt.Printf("Waiting for event or message\n")
 		select {
 		case msg := <-rtm.IncomingEvents:
 			switch evtt := msg.Data.(type) {
