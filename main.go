@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/nlopes/slack"
-	"github.com/sabhiram/go-rpio"
+	rpio "github.com/sabhiram/go-rpio"
 )
 
 const (
@@ -175,13 +175,16 @@ Loop:
 			switch evtt := msg.Data.(type) {
 			case *slack.MessageEvent:
 				text := strings.TrimSpace(strings.ToLower(evtt.Text))
+				match := false
 				for k, fn := range commands {
 					if matched, _ := regexp.MatchString(k, text); matched {
 						fn(rtm, evtt)
-						break
+						match := true
 					}
 				}
-				servo.errorReply(rtm, evtt)
+				if !match {
+					servo.errorReply(rtm, evtt)
+				}
 			case *slack.RTMError:
 				fmt.Printf("Error: %s\n", evtt.Error())
 			case *slack.InvalidAuthEvent:
