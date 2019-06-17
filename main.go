@@ -16,8 +16,7 @@ import (
 const (
 	cFreqMultiplier = 200 // 50hz but in 200 increments to get 10
 	cAngleDelta     = 180.0 / (20.0 - 10.0)
-	cHelpMessage    = `I am a servo control bot! You can tell me to "turn left",
-"turn right", "center", or ask me for my current "angle".`
+	cHelpMessage    = "I am a servo control bot! You can tell me to `turn left`,`turn right`, `center`, or ask me for my current `angle`. You can even say things like `full left` or `full right`."
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -83,6 +82,15 @@ func (s *servo) randomReply(rtm *slack.RTM, ev *slack.MessageEvent) error {
 		"You must be management, snooping around.",
 		"Looking for waldo? Let me see what I can do.",
 		"Getting right on that boss!",
+	}
+	return s.reply(replies[rand.Intn(len(replies))], rtm, ev)
+}
+
+func (s *servo) errorReply(rtm *slack.RTM, ev *slack.MessageEvent) error {
+	replies := []string{
+		"Not sure I know what you mean. Type `help` and such.",
+		"You must be looking for the `help`?",
+		"Are you sure that is a valid command?",
 	}
 	return s.reply(replies[rand.Intn(len(replies))], rtm, ev)
 }
@@ -170,8 +178,10 @@ Loop:
 				for k, fn := range commands {
 					if matched, _ := regexp.MatchString(k, text); matched {
 						fn(rtm, evtt)
+						break
 					}
 				}
+				servo.errorReply(rtm, evtt)
 			case *slack.RTMError:
 				fmt.Printf("Error: %s\n", evtt.Error())
 			case *slack.InvalidAuthEvent:
