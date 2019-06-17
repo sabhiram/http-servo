@@ -3,6 +3,42 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "3ORLCzeT6ci2RkN0jo1bY6bmE8A=",
+			"path": "github.com/gorilla/websocket",
+			"revision": "80c2d40e9b91f2ef7a9c1a403aeec64d1b89a9a6",
+			"revisionTime": "2019-04-27T04:03:06Z"
+		},
+		{
+			"checksumSHA1": "MzVOZzZQAKvyI9FBjB77v9/RknU=",
+			"path": "github.com/nlopes/slack",
+			"revision": "445280bcb9c1b02b4a88b1ee9aa7afd735b2dc55",
+			"revisionTime": "2019-06-09T02:19:33Z"
+		},
+		{
+			"checksumSHA1": "DY2gOON8opda18Z2WGVMln4f/to=",
+			"path": "github.com/nlopes/slack/internal/errorsx",
+			"revision": "445280bcb9c1b02b4a88b1ee9aa7afd735b2dc55",
+			"revisionTime": "2019-06-09T02:19:33Z"
+		},
+		{
+			"checksumSHA1": "DQyknBX6eTRG2cz+UuXxU9ZFqPQ=",
+			"path": "github.com/nlopes/slack/internal/timex",
+			"revision": "445280bcb9c1b02b4a88b1ee9aa7afd735b2dc55",
+			"revisionTime": "2019-06-09T02:19:33Z"
+		},
+		{
+			"checksumSHA1": "gwieK+pNgdb6dgrdB8fynmN3mPg=",
+			"path": "github.com/nlopes/slack/slackutilsx",
+			"revision": "445280bcb9c1b02b4a88b1ee9aa7afd735b2dc55",
+			"revisionTime": "2019-06-09T02:19:33Z"
+		},
+		{
+			"checksumSHA1": "I7hloldMJZTqUx6hbVDp5nk9fZQ=",
+			"path": "github.com/pkg/errors",
+			"revision": "27936f6d90f9c8e1145f11ed52ffffbfdb9e0af7",
+			"revisionTime": "2019-02-27T00:00:51Z"
+		},
+		{
 			"checksumSHA1": "lbUZkJNO/4zOlILy6o+j1WAaZ+4=",
 			"path": "github.com/sabhiram/go-rpio",
 			"revision": "a36b96d0b1a40b37017d64875275e7e6312408c7",
