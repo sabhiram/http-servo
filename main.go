@@ -179,7 +179,7 @@ Loop:
 				for k, fn := range commands {
 					if matched, _ := regexp.MatchString(k, text); matched {
 						fn(rtm, evtt)
-						match := true
+						match = true
 					}
 				}
 				if !match {
