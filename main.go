@@ -3,9 +3,11 @@ package main
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/nlopes/slack"
 	rpio "github.com/sabhiram/go-rpio"
@@ -18,6 +20,8 @@ const (
 "turn right", "center", or ask me for my current "angle".`
 )
 
+////////////////////////////////////////////////////////////////////////////////
+
 func fatalOnErr(err error) {
 	if err != nil {
 		fmt.Printf("Fatal error: %s\n", err.Error())
@@ -26,7 +30,20 @@ func fatalOnErr(err error) {
 	}
 }
 
+func clampAngle(angle float32) float32 {
+	if angle < 0.0 {
+		angle = 0.0
+	} else if angle > 180.0 {
+		angle = 180.0
+	}
+	return angle
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 type cmdFunc func(rtm *slack.RTM, ev *slack.MessageEvent) error
+
+////////////////////////////////////////////////////////////////////////////////
 
 type servo struct {
 	pin   rpio.Pin
@@ -38,15 +55,6 @@ func newServo(bcmpid uint8) (*servo, error) {
 	p.Mode(rpio.Pwm)
 	p.Freq(50 * cFreqMultiplier)
 	return &servo{pin: p, angle: 90.0}, nil
-}
-
-func clampAngle(angle float32) float32 {
-	if angle < 0.0 {
-		angle = 0.0
-	} else if angle > 180.0 {
-		angle = 180.0
-	}
-	return angle
 }
 
 // setAngle sets the servo angle to between 0 and 180 degrees.
@@ -64,27 +72,67 @@ func (s *servo) setAngle(angle float32) error {
 	return nil
 }
 
+func (s *servo) reply(msg string, rtm *slack.RTM, ev *slack.MessageEvent) error {
+	rtm.SendMessage(rtm.NewOutgoingMessage(msg, ev.Channel))
+	return nil
+}
+
+func (s *servo) randomReply(rtm *slack.RTM, ev *slack.MessageEvent) error {
+	replies := []string{
+		"Umm ok, I can do that for you!",
+		"You must be management, snooping around.",
+		"Looking for waldo? Let me see what I can do.",
+		"Getting right on that boss!",
+	}
+	return s.reply(replies[rand.Intn(len(replies))], rtm, ev)
+}
+
 func (s *servo) turnLeft(rtm *slack.RTM, ev *slack.MessageEvent) error {
-	return s.setAngle(s.angle - cAngleDelta)
+	if err := s.setAngle(s.angle - cAngleDelta); err != nil {
+		return err
+	}
+	return s.randomReply(rtm, ev)
 }
 
 func (s *servo) turnRight(rtm *slack.RTM, ev *slack.MessageEvent) error {
-	return s.setAngle(s.angle + cAngleDelta)
+	if err := s.setAngle(s.angle + cAngleDelta); err != nil {
+		return err
+	}
+	return s.randomReply(rtm, ev)
+}
+
+func (s *servo) goto0(rtm *slack.RTM, ev *slack.MessageEvent) error {
+	if err := s.setAngle(0.0); err != nil {
+		return err
+	}
+	return s.randomReply(rtm, ev)
 }
 
 func (s *servo) gotoCenter(rtm *slack.RTM, ev *slack.MessageEvent) error {
-	return s.setAngle(90.0)
+	if err := s.setAngle(90.0); err != nil {
+		return err
+	}
+	return s.randomReply(rtm, ev)
+}
+
+func (s *servo) goto180(rtm *slack.RTM, ev *slack.MessageEvent) error {
+	if err := s.setAngle(180.0); err != nil {
+		return err
+	}
+	return s.randomReply(rtm, ev)
 }
 
 func (s *servo) getAngle(rtm *slack.RTM, ev *slack.MessageEvent) error {
-	rtm.SendMessage(rtm.NewOutgoingMessage(fmt.Sprintf("Current angle: % .2f°", s.angle), ev.Channel))
+	s.reply(fmt.Sprintf("Current angle: % .2f°", s.angle), rtm, ev)
 	return nil
 }
 
 func (s *servo) sendHelp(rtm *slack.RTM, ev *slack.MessageEvent) error {
-	rtm.SendMessage(rtm.NewOutgoingMessage(cHelpMessage, ev.Channel))
+	return s.reply(cHelpMessage, rtm, ev)
 	return nil
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 func main() {
 	token := os.Getenv("SLACKBOT_TOKEN")
@@ -101,7 +149,9 @@ func main() {
 	commands := map[string]cmdFunc{
 		"turn left":  servo.turnLeft,
 		"turn right": servo.turnRight,
+		"full left":  servo.goto0,
 		"center":     servo.gotoCenter,
+		"full right": servo.goto180,
 		"angle":      servo.getAngle,
 		"help":       servo.sendHelp,
 	}
@@ -132,5 +182,8 @@ Loop:
 			}
 		}
 	}
+}
 
+func init() {
+	rand.Seed(time.Now().Unix())
 }
