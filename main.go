@@ -14,9 +14,11 @@ import (
 )
 
 const (
-	cFreqMultiplier = 200 // 50hz but in 200 increments to get 10
-	cAngleDelta     = 180.0 / (20.0 - 10.0)
-	cHelpMessage    = "I am a servo control bot! You can tell me to `turn left`,`turn right`, `center`, or ask me for my current `angle`. You can even say things like `full left` or `full right`."
+	cFreqMultiplier     = 200 // 50hz but in 200 increments to get 10
+	cCenterAngleDegrees = 90.0
+	cAngleDelta         = 180.0 / (20.0 - 10.0)
+	cInterpDuration     = 200 * time.Millisecond
+	cHelpMessage        = "I am a servo control bot! You can tell me to `turn left`,`turn right`, `center`, or ask me for my current `angle`. You can even say things like `full left` or `full right`."
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -45,28 +47,38 @@ type cmdFunc func(rtm *slack.RTM, ev *slack.MessageEvent) error
 ////////////////////////////////////////////////////////////////////////////////
 
 type servo struct {
-	pin   rpio.Pin
-	angle float32
+	pin    rpio.Pin
+	angle  float32
+	target float32
 }
 
 func newServo(bcmpid uint8) (*servo, error) {
 	p := rpio.Pin(bcmpid)
 	p.Mode(rpio.Pwm)
 	p.Freq(50 * cFreqMultiplier)
-	return &servo{pin: p, angle: 90.0}, nil
+	s := &servo{
+		pin:    p,
+		angle:  cCenterAngleDegrees,
+		target: cCenterAngleDegrees,
+	}
+	s.setAngle(cCenterAngleDegrees)
+	return s, nil
+}
+
+func (s *servo) setTarget(tangle float32) error {
+	s.target = clampAngle(tangle)
+	return nil
 }
 
 // setAngle sets the servo angle to between 0 and 180 degrees.
 func (s *servo) setAngle(angle float32) error {
 	angle = clampAngle(angle)
-	if angle == s.angle {
-		return nil
-	}
+
 	// DutyCycle of 1.0ms / 20ms corresponds to 0 deg
 	// 				1.5ms / 20ms corresponds to 90 deg
 	//				2.0ms / 20ms corresponds to 180 deg
-	fmt.Printf("Setting servo angle to %f degrees\n", angle)
-	s.pin.DutyCycle(uint32(((1.0+(angle/180.0))/20.0)*cFreqMultiplier), cFreqMultiplier)
+	dc := uint32(((1.0 + (angle / 180.0)) / 20.0) * cFreqMultiplier)
+	s.pin.DutyCycle(dc, cFreqMultiplier)
 	s.angle = angle
 	return nil
 }
@@ -110,21 +122,21 @@ func (s *servo) turnRight(rtm *slack.RTM, ev *slack.MessageEvent) error {
 }
 
 func (s *servo) goto0(rtm *slack.RTM, ev *slack.MessageEvent) error {
-	if err := s.setAngle(0.0); err != nil {
+	if err := s.setTarget(0.0); err != nil {
 		return err
 	}
 	return s.randomReply(rtm, ev)
 }
 
 func (s *servo) gotoCenter(rtm *slack.RTM, ev *slack.MessageEvent) error {
-	if err := s.setAngle(90.0); err != nil {
+	if err := s.setTarget(cCenterAngleDegrees); err != nil {
 		return err
 	}
 	return s.randomReply(rtm, ev)
 }
 
 func (s *servo) goto180(rtm *slack.RTM, ev *slack.MessageEvent) error {
-	if err := s.setAngle(180.0); err != nil {
+	if err := s.setTarget(180.0); err != nil {
 		return err
 	}
 	return s.randomReply(rtm, ev)
@@ -167,6 +179,7 @@ func main() {
 	api := slack.New(token)
 	rtm := api.NewRTM()
 	go rtm.ManageConnection()
+	ticker := time.NewTicker(cInterpDuration)
 
 Loop:
 	for {
@@ -190,8 +203,12 @@ Loop:
 			case *slack.InvalidAuthEvent:
 				fmt.Printf("Bad credentials\n")
 				break Loop
-			default:
-				// No op
+			}
+		case <-ticker.C:
+			if servo.target > servo.angle {
+				servo.setAngle(servo.angle + cAngleDelta)
+			} else if servo.target < servo.angle {
+				servo.setAngle(servo.angle - cAngleDelta)
 			}
 		}
 	}
